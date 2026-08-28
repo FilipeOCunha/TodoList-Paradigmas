@@ -46,9 +46,15 @@ app.MapPost("/todos", (CreateTodoRequest request) =>
         });
     }
 
-    int nextId = todos.Count == 0
-        ? 1
-        : todos.Max(todo => todo.Id) + 1;
+    int nextId = 1;
+
+    foreach (var todo in todos)
+    {
+        if (todo.Id >= nextId)
+        {
+            nextId = todo.Id + 1;
+        }
+    }
 
     var newTodo = new Todo(
         nextId,
@@ -64,9 +70,18 @@ app.MapPost("/todos", (CreateTodoRequest request) =>
 // PATCH /todos/{id}/toggle
 app.MapPatch("/todos/{id:int}/toggle", (int id) =>
 {
-    var todo = todos.FirstOrDefault(todo => todo.Id == id);
+    Todo? todoEncontrado = null;
 
-    if (todo is null)
+    foreach (var item in todos)
+    {
+        if (item.Id == id)
+        {
+            todoEncontrado = item;
+            break;
+        }
+    }
+
+    if (todoEncontrado is null)
     {
         return Results.NotFound(new
         {
@@ -74,17 +89,26 @@ app.MapPatch("/todos/{id:int}/toggle", (int id) =>
         });
     }
 
-    todo.Completed = !todo.Completed;
+    todoEncontrado.Completed = !todoEncontrado.Completed;
 
-    return Results.Ok(todo);
+    return Results.Ok(todoEncontrado);
 });
 
 // DELETE /todos/{id}
 app.MapDelete("/todos/{id:int}", (int id) =>
 {
-    var todo = todos.FirstOrDefault(todo => todo.Id == id);
+    Todo? todoEncontrado = null;
 
-    if (todo is null)
+    foreach (var item in todos)
+    {
+        if (item.Id == id)
+        {
+            todoEncontrado = item;
+            break;
+        }
+    }
+
+    if (todoEncontrado is null)
     {
         return Results.NotFound(new
         {
@@ -92,7 +116,7 @@ app.MapDelete("/todos/{id:int}", (int id) =>
         });
     }
 
-    todos.Remove(todo);
+    todos.Remove(todoEncontrado);
 
     return Results.NoContent();
 });
