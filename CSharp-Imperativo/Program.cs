@@ -15,6 +15,8 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+var logger = app.Logger;
+
 app.UseCors("TodoPolicy");
 
 if (app.Environment.IsDevelopment())
@@ -32,6 +34,11 @@ var todos = new List<Todo>
 // GET /todos
 app.MapGet("/todos", () =>
 {
+    logger.LogInformation(
+        "[GET] Listando tarefas. Total: {Total}",
+        todos.Count
+    );
+
     return Results.Ok(todos);
 });
 
@@ -40,6 +47,10 @@ app.MapPost("/todos", (CreateTodoRequest request) =>
 {
     if (string.IsNullOrWhiteSpace(request.Title))
     {
+        logger.LogWarning(
+        "[POST] Tentativa de criar tarefa com título inválido."
+    );
+
         return Results.BadRequest(new
         {
             error = "O título da tarefa é obrigatório."
@@ -64,6 +75,12 @@ app.MapPost("/todos", (CreateTodoRequest request) =>
 
     todos.Add(newTodo);
 
+    logger.LogInformation(
+        "[POST] Tarefa criada. ID: {Id} | Título: {Titulo}",
+        newTodo.Id,
+        newTodo.Title
+    );
+
     return Results.Created($"/todos/{newTodo.Id}", newTodo);
 });
 
@@ -83,13 +100,25 @@ app.MapPatch("/todos/{id:int}/toggle", (int id) =>
 
     if (todoEncontrado is null)
     {
+        logger.LogWarning(
+            "[PATCH] Tarefa não encontrada. ID: {Id}",
+            id
+        );
+
         return Results.NotFound(new
         {
             error = "Tarefa não encontrada."
         });
+
     }
 
     todoEncontrado.Completed = !todoEncontrado.Completed;
+
+    logger.LogInformation(
+    "[PATCH] Tarefa alterada. ID: {Id} | Completed: {Completed}",
+    todoEncontrado.Id,
+    todoEncontrado.Completed
+);
 
     return Results.Ok(todoEncontrado);
 });
@@ -110,24 +139,27 @@ app.MapDelete("/todos/{id:int}", (int id) =>
 
     if (todoEncontrado is null)
     {
+        logger.LogWarning(
+            "[DELETE] Tarefa não encontrada. ID: {Id}",
+            id
+        );
+
         return Results.NotFound(new
         {
             error = "Tarefa não encontrada."
         });
+
     }
 
     todos.Remove(todoEncontrado);
 
-    return Results.NoContent();
-});
+    logger.LogInformation(
+    "[DELETE] Tarefa removida. ID: {Id} | Título: {Titulo}",
+    todoEncontrado.Id,
+    todoEncontrado.Title
+);
 
-// GET /health
-app.MapGet("/health", () =>
-{
-    return Results.Ok(new
-    {
-        status = "ok"
-    });
+    return Results.NoContent();
 });
 
 app.Run();
